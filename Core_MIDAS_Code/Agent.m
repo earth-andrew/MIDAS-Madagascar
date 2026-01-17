@@ -7,9 +7,6 @@ classdef Agent < handle
        matrixLocation
        visX
        visY
-       wealth
-       wealthHistory
-       realizedUtility
        age
        gender
        TOD
@@ -28,13 +25,21 @@ classdef Agent < handle
        bestPortfolioValues
        knowsIncomeLocation
        incomeLayersHistory
+       wealth
+       incomeHistory
+       wealthHistory
+       realizedUtility
        training
+       diploma
        experience
        scratch;
        overlap
        heardOpening
        expectedProbOpening
        timeProbOpeningUpdated
+       currentPlaceAttachment
+       currentPAScaler
+
        %incomeLayersTest
        currentPortfolio
        currentAspiration
@@ -42,6 +47,7 @@ classdef Agent < handle
        firstPortfolio
        agentPortfolioHistory
        agentAspirationHistory
+       backCastProportion
        personalIncomeHistory
        currentSharedIn
        lastIntendedShareIn
@@ -55,7 +61,6 @@ classdef Agent < handle
        pMeetNew
        pAddFitElement
        pChoose
-       pBackCast
        fDecay
        pGetLayer_informed
        pGetLayer_uninformed
@@ -71,6 +76,9 @@ classdef Agent < handle
        rValue
        bList
        prospectLoss
+       placeAttachment
+       placeAttachmentGrow
+       placeAttachmentDecay
    end
    
    events

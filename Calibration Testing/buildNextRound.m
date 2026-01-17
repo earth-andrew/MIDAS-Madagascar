@@ -21,7 +21,7 @@ jointPopSum = sum(sum(jointPopWeights));
 fracMigsData = migrationData / sum(sum(migrationData));
 
 %another is the migs per total population
-migRateData = migrationData / sum(popData);
+migRateData = migrationData / sum(popData)
 
 %and another is the in/out ratio
 inOutData = sum(migrationData) ./ (sum(migrationData'))';
@@ -44,26 +44,26 @@ try
     load evaluationOutputs
     disp (evaluationOutputs)
 catch
-    fileList = dir('MC*.mat')
+    fileList = dir('SenegalTest_CalibrationExperiment_*.mat');
     
-    %inputListRun = {};
-    %outputListRun = {};
+    inputListRun = [];
+    outputListRun = [];
     skip = false(length(fileList),1);
     for indexI = 1:length(fileList)
         try
             currentRun = load(fileList(indexI).name);
             
-            fprintf(['Run ' num2str(indexI) ' of ' num2str(length(fileList)) '.\n']);
+            fprintf(['Run ' num2str(indexI) ' of ' num2str(length(fileList)) '.\n'])
             
             tempMat = currentRun.output.migrationMatrix;
-            tempMat = [sum(tempMat(:,collapseColumns{1}),2) ...
-                sum(tempMat(:,collapseColumns{2}),2) ...
-                sum(tempMat(:,collapseColumns{3}),2) ...
-                sum(tempMat(:,collapseColumns{4}),2) ...
-                sum(tempMat(:,collapseColumns{5}),2) ...
-                sum(tempMat(:,collapseColumns{6}),2) ...
-                sum(tempMat(:,collapseColumns{7}),2) ...
-                sum(tempMat(:,collapseColumns{8}),2) ...
+            tempMat = [sum(tempMat(:,collapseColumns{1},end),2) ...
+                sum(tempMat(:,collapseColumns{2},end),2) ...
+                sum(tempMat(:,collapseColumns{3},end),2) ...
+                sum(tempMat(:,collapseColumns{4},end),2) ...
+                sum(tempMat(:,collapseColumns{5},end),2) ...
+                sum(tempMat(:,collapseColumns{6},end),2) ...
+                sum(tempMat(:,collapseColumns{7},end),2) ...
+                sum(tempMat(:,collapseColumns{8},end),2) ...
                 ];
             tempMat = [sum(tempMat(collapseColumns{1},:)); ...
                 sum(tempMat(collapseColumns{2},:)); ...
@@ -105,8 +105,10 @@ catch
             popInOut_r2 = weightedPearson(inOutRun(:), inOutData(:), sourcePopWeights(:));
             
             %runLevel
-            
-            currentInputRun = array2table([currentRun.input.parameterValues]','VariableNames',strrep({currentRun.input.parameterNames{:}},'.',''));
+            currentInputRun = array2table([currentRun.input.parameterValues]','VariableNames',currentRun.input.parameterNames');
+
+            %currentInputRun = array2table([currentRun.input.parameterValues]','VariableNames',strrep({currentRun.input.parameterNames},'.',''))
+
             currentOutputRun = table(fracMigsError,sourceWeightFracMigsError, destWeightFracMigsError, jointWeightFracMigsError, ...
                 migRateError,sourceWeightMigRateError, destWeightMigRateError, jointWeightMigRateError, ...
                 fracMigs_r2, sourceFracMigs_r2, destFracMigs_r2, jointFracMigs_r2, ...
@@ -117,8 +119,10 @@ catch
                 'fracMigs_r2', 'sourceFracMigs_r2', 'destFracMigs_r2', 'jointFracMigs_r2', ...
                 'migRate_r2', 'sourceMigRate_r2', 'destMigRate_r2', 'jointMigRate_r2', ...
                 'inOutError','popWeightInOutError','inOutError_r2','popInOut_r2'});
-            inputListRun(indexI,:) = currentInputRun;
-            outputListRun(indexI,:) = currentOutputRun;
+            inputListRun = [inputListRun; currentInputRun];
+            outputListRun = [outputListRun; currentOutputRun];
+            %inputListRun(indexI,:) = currentInputRun
+            %outputListRun(indexI,:) = currentOutputRun
         catch
             skip(indexI) = true;
         end
@@ -131,8 +135,7 @@ catch
     fileList(skip) = [];
     
 end
-
-%save evaluationOutputs inputListRun outputListRun fileList
+save evaluationOutputs inputListRun outputListRun fileList
 
 minR2 = quantile(outputListRun.jointFracMigs_r2,[1 - quantileMarker]);
 bestInputs = inputListRun(outputListRun.jointFracMigs_r2 >= minR2,:);
@@ -140,14 +143,15 @@ bestInputs = inputListRun(outputListRun.jointFracMigs_r2 >= minR2,:);
 expList = dir('experiment_*');
 load(expList(1).name);
 
+
 for indexI = 1:height(mcParams)
-    tempIndex = strmatch(strrep(mcParams.Name{indexI},'.',''),inputListRun.Properties.VariableNames);
+    %tempIndex = strmatch(strrep(mcParams.Name{indexI},'.',''),inputListRun.Properties.VariableNames)
+    tempIndex = strcmp(mcParams.Name{indexI},inputListRun.Properties.VariableNames);
     mcParams.Lower(indexI) = min(table2array(bestInputs(:,tempIndex)));
     mcParams.Upper(indexI) = max(table2array(bestInputs(:,tempIndex)));
 end
 
 save updatedMCParams mcParams;
-
 
 
 end
@@ -183,5 +187,5 @@ temp = ylabel('ORIGIN','FontSize',16,'Position',[-5 30]);
 xlabel('DESTINATION','FontSize',16);
 %set(temp,'Position', [-.1 .5 0]);
 set(gcf,'Position',[100 100 600 500]);
-
+savefig('MigrationCalibration.png')
 end

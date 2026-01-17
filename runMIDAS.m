@@ -1,20 +1,24 @@
-function mcScriptRun()  
+ function mcScriptRun()  
 
 clear functions
 clear classes
 
-addpath('./Core_MIDAS_Code');
+% Force MATLAB to refresh path cache
+rehash path;
+
+addpath('./Override_Core_MIDAS_Code');
 addpath('./Application_Specific_MIDAS_Code');
-%addpath('./Override_Core_MIDAS_Code');
+addpath('./Core_MIDAS_Code');
+addpath('./Data');
+
 
 rng('shuffle');
 
-runName = 'Mada test';
-series = ['test series'];
+runName = 'MADA_test_PA';
+series = ['MADA'];
 saveDirectory = './Outputs/';
 
 input = [];
-
 
 %this next line runs the MIDAS model
 output = midasMainLoop(input, runName);

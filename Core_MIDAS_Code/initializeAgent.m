@@ -19,13 +19,18 @@ pAddFitElement = min(1,max(0,agentParameters.probAddFitElementMean + randn() * a
 pRandomLearn = min(1,max(0,agentParameters.randomLearnMean + randn() * agentParameters.randomLearnSD));
 countRandomLearn = min(1,max(0,round(agentParameters.randomLearnCountMean + randn() * agentParameters.randomLearnCountSD)));
 pChoose = min(1,max(0,agentParameters.chooseMean + randn() * agentParameters.chooseSD));
-pBackCast = min(1,max(0,agentParameters.backCastMean + randn() * agentParameters.backCastSD));
 rValue = max(0,agentParameters.rValueMean + randn() * agentParameters.rValueSD);
 discountRate = max(0, agentParameters.discountRateMean + randn() * agentParameters.discountRateSD);
 prospectLoss = -max(0, agentParameters.prospectLossMean + randn() * agentParameters.prospectLossSD);
 pGetLayer_informed = min(1,max(0,agentParameters.informedExpectedProbJoinLayerMean + randn() * agentParameters.informedExpectedProbJoinLayerSD));
 pGetLayer_uninformed = min(1,max(0,agentParameters.uninformedMaxExpectedProbJoinLayerMean + randn() * agentParameters.uninformedMaxExpectedProbJoinLayerSD));
 fDecay = min(1,max(0,agentParameters.expectationDecayMean + randn() * agentParameters.expectationDecaySD));
+
+placeAttachment = min(1,max(0,agentParameters.placeAttachmentMean + randn() * agentParameters.placeAttachmentSD));
+placeAttachmentGrow = min(1,max(0,agentParameters.placeAttachmentGrowMean + randn() * agentParameters.placeAttachmentGrowSD));
+placeAttachmentDecay = min(1,max(0,agentParameters.placeAttachmentDecayMean + randn() * agentParameters.placeAttachmentDecaySD));
+initialPlaceAttachment = min(1,max(0,agentParameters.initialPlaceAttachmentMean + randn() * agentParameters.initialPlaceAttachmentSD));
+
 
 %bList has elements corresponding to each kind of utility layer present
 bList = max(0, agentParameters.bListMean + randn(utilityVariables.numForms,1) * agentParameters.bListSD);
@@ -51,11 +56,17 @@ newAgent.currentSharedIn = 0;
 newAgent.knowledgeShareFrac = knowledgeShareFrac;
 newAgent.shareCostThreshold = shareCostThreshold;
 newAgent.incomeShareFraction = incomeShareFraction;
+newAgent.incomeHistory = zeros(size(modelParameters.timeSteps,1));
 newAgent.wealth = wealth;
 newAgent.wealthHistory = cell(size(modelParameters.timeSteps,1));
 newAgent.realizedUtility = 0;
 newAgent.numBestLocation = numBestLocation;
 newAgent.numBestPortfolio = numBestPortfolio;
+newAgent.placeAttachment = placeAttachment; %agent-specific place attachment 'ness'
+newAgent.placeAttachmentGrow = placeAttachmentGrow; %agent-specific place attachment growth rate
+newAgent.placeAttachmentDecay = placeAttachmentDecay; %agent-specific place attachment decay rate
+newAgent.currentPlaceAttachment = initialPlaceAttachment * ones(size(utilityVariables.utilityBaseLayers,1),1); %attachment to each place
+newAgent.currentPAScaler = zeros(size(utilityVariables.utilityBaseLayers,1),1); %scaled utility by place, based on PA
 
 newAgent.numRandomLocation = numRandomLocation;
 newAgent.numRandomPortfolio = numRandomPortfolio;
@@ -65,17 +76,18 @@ newAgent.bestFidelity = cell(size(utilityVariables.utilityHistory,1), numBestFid
 newAgent.bestPortfolioValues = zeros(size(utilityVariables.utilityHistory,1),numBestPortfolio);
 newAgent.consideredPortfolios = [];
 newAgent.training = false(size(utilityVariables.utilityLayerFunctions,1),1);
+newAgent.diploma = [];
 newAgent.experience = zeros(size(utilityVariables.utilityLayerFunctions,1),1);
 newAgent.consideredHistory = cell(size(modelParameters.timeSteps,1));
 newAgent.agentPortfolioHistory = cell(size(modelParameters.timeSteps,1));
 newAgent.agentAspirationHistory = cell(size(modelParameters.timeSteps,1));
+newAgent.backCastProportion = zeros(modelParameters.timeSteps,1);
 newAgent.pInteract = pInteract;
 newAgent.pMeetNew = pMeetNew;
 newAgent.pAddFitElement = pAddFitElement;
 newAgent.pRandomLearn = pRandomLearn;
 newAgent.countRandomLearn = countRandomLearn;
 newAgent.pChoose = pChoose;
-newAgent.pBackCast = pBackCast;
 newAgent.fDecay = fDecay;
 newAgent.pGetLayer_informed = pGetLayer_informed;
 newAgent.pGetLayer_uninformed = pGetLayer_uninformed;

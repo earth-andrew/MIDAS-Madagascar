@@ -20,14 +20,76 @@ function [ locations, map, borders, mapParameters ] = createMapFromSHP( mapParam
 %returns a map of each administrative level
 
 %read in the shapefile if necessary
-
 shapeFileName = regexprep(mapParameters.filePath,'.shp','');
-
 try 
-    load([shapeFileName '.mat']);
-catch
+    % Try to load Madagascar cache first
+    if exist('Madagascar_44_UrbanRural_MIDAS.mat', 'file')
+        fprintf('====================================\n');
+        fprintf('Loading Madagascar 44 urban/rural cache...\n');
+        
+        % SAVE input mapParameters before loading (to preserve all fields)
+        inputMapParameters = mapParameters;
+        
+        % Load cache file
+        cacheData = load('Madagascar_44_UrbanRural_MIDAS.mat');
+        
+        % Extract required variables from cache
+        locations = cacheData.locations;
+        map = cacheData.map;
+        borders = cacheData.borders;
+        
+        % Build distance matrix if it exists in cache
+        if isfield(cacheData, 'distanceMatrix')
+            distanceMatrix = cacheData.distanceMatrix;
+        else
+            % If not in cache, we'll need to build it
+            error('Distance matrix not in cache');
+        end
+        
+        % Merge mapParameters: use input version but add spatial fields from cache
+        if isfield(cacheData, 'mapParameters')
+            cachedMapParams = cacheData.mapParameters;
+            % Copy spatial fields from cache if they exist
+            if isfield(cachedMapParams, 'sizeX')
+                inputMapParameters.sizeX = cachedMapParams.sizeX;
+            end
+            if isfield(cachedMapParams, 'sizeY')
+                inputMapParameters.sizeY = cachedMapParams.sizeY;
+            end
+            if isfield(cachedMapParams, 'r1')
+                inputMapParameters.r1 = cachedMapParams.r1;
+            end
+            % Safety: Ensure r1 is preserved from cache (critical for visualization)
+            if ~isfield(inputMapParameters, 'r1') || isempty(inputMapParameters.r1)
+                if isfield(cachedMapParams, 'r1')
+                    inputMapParameters.r1 = cachedMapParams.r1;
+                end
+            end
+        end
+        mapParameters = inputMapParameters;  % Use input version with all fields
+        
+        % Convert locations to table format
+        if isstruct(locations)
+            locations = struct2table(locations);
+        end
+        
+        fprintf('✓ Loaded 44 locations (22 regions × urban/rural)\n');
+        fprintf('  Distance range: %.0f - %.0f km\n', ...
+            min(distanceMatrix(distanceMatrix>0)), max(distanceMatrix(:)));
+        fprintf('====================================\n');
+        
+    else
+        % If no cache, load from shapefile normally
+        error('Cache not found, will load from shapefile');
+    end
     
-    fprintf('No processed map found.  Building from shape file (This can take some time)...\n');
+catch ME
+    % Original shapefile loading code continues below...
+    fprintf('Cache not found or error loading. Building from shapefile...\n');
+    fprintf('Error details: %s\n', ME.message);
+    
+    % [REST OF ORIGINAL CODE STAYS UNCHANGED]
+    % Keep everything from here down exactly as it is
     shapeData = shaperead(shapeFileName);
  
     %identify the number of levels requested
@@ -81,7 +143,6 @@ catch
     
     sizeX = ceil((maxX - minX) + 3 * xMargin) * mapParameters.density;
     sizeY = ceil((maxY - minY) + 3 * yMargin) * mapParameters.density;
-    
     r1 = [mapParameters.density  maxY + yMargin minX - xMargin];
     
     map = zeros(sizeY, sizeX, numLevels + 1);
@@ -152,9 +213,9 @@ catch
         layerNames{end+1} = ['AdminUnit' num2str(indexI-1)];
         idCount = max(max(tempLayer)) + mapParameters.colorSpacing;
     end
-    
+
     [listY,listX] = setpostn(tempMap,r1,[shapeData(:).Latitude],[shapeData(:).Longitude]);
-    
+
     indexLocations = sub2ind([sizeY sizeX], listY, listX);
     
     %now that we are finished, get rid of the top layer used to start the
